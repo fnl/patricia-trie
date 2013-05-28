@@ -3,7 +3,7 @@
    :synopsis: A PATRICIA trie implementation.
 
 .. moduleauthor:: Florian Leitner <florian.leitner@gmail.com>
-.. License: GNU Affero GPL v3 (http://www.gnu.org/licenses/agpl.html)
+.. License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
 
 from io import StringIO
