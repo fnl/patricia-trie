@@ -1,1 +1,6 @@
-This file was created by PyCharm 2.7.1 for binding GitHub repository
+A pure Python implementation of a PATRICIA trie.
+
+Author: Florian Leitner
+(C) 2013, All rights reserved.
+
+License: GNU Affero GPL v3 or later (http://www.gnu.org/licenses/agpl.html)
