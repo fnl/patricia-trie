@@ -1,20 +1,27 @@
+"""
+.. py:module:: test_patricia
+   :synopsis: Test cases for the PATRICIA trie implementation.
+
+.. moduleauthor:: Florian Leitner <florian.leitner@gmail.com>
+.. License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
+"""
 from unittest import main, TestCase
-from patricia import trie
+from patricia import trie, _NonTerminal
 
 __author__ = 'Florian Leitner'
-
+__version__ = 1
 
 class Tests(TestCase):
-    def testPrefixTrieSetup(self):
+    def testInitContains(self):
         T = trie()
         T['key'] = 'value'
+        T = trie(**T)
         self.assertTrue('key' in T)
-        self.assertEqual('value', T['key'])
         self.assertFalse('keys' in T)
         self.assertFalse('ke' in T)
         self.assertFalse('kex' in T)
 
-    def testPrefixTrieUsage(self):
+    def testSetGetDel(self):
         T = trie()
         T['foo'] = 1
         T['bar'] = 2
@@ -31,7 +38,7 @@ class Tests(TestCase):
         self.assertRaises(KeyError, T.__getitem__, 'bar')
         self.assertEqual(T['baz'], 3)
 
-    def testPrefixTrieWithEmptyString(self):
+    def testEmptyStringKey(self):
         T = trie()
         T['foo'] = 1
         T[''] = 2
@@ -40,7 +47,7 @@ class Tests(TestCase):
         del T['']
         self.assertRaises(KeyError, T.__getitem__, '')
 
-    def testPrefixTrieIterator(self):
+    def testIterator(self):
         T = trie()
         T['ba'] = 2
         T['baz'] = 3
@@ -49,36 +56,56 @@ class Tests(TestCase):
         T[''] = 0
         self.assertEqual(sorted(['', 'fool', 'ba', 'baz']), sorted(list(T)))
 
-    def testPrefixTrieStr(self):
+    def testValues(self):
         T = trie()
         T['ba'] = 2
         T['baz'] = "hey's"
         T['fool'] = 1.5
-        result = str(T)
-        self.assertTrue(result.startswith("<trie{"), result)
-        self.assertTrue(result.endswith('}>'), result)
+        self.assertListEqual(sorted(["2", "hey's", "1.5"]), sorted([str(v) for v in T.values()]))
+
+    def testStrRepr(self):
+        T = trie()
+        T['ba'] = 2
+        T['baz'] = "hey's"
+        T['fool'] = 1.5
+        result = repr(T)
+        self.assertTrue(result.startswith("trie({"), result)
+        self.assertTrue(result.endswith('})'), result)
         self.assertTrue("'ba': 2" in result, result)
         self.assertTrue("'baz': \"hey's\"" in result, result)
         self.assertTrue("'fool': 1.5" in result, result)
 
-    def testPrefixTrieIndexOf(self):
+    def testGetItems(self):
         T = trie()
         T['ba'] = 2
         T['baz'] = 3
         T['fool'] = 1
-        self.assertEqual(2, T.indexOf('bar'))
-        self.assertEqual(4, T.indexOf('fool'))
-        self.assertEqual(-1, T.indexOf('fo'))
-        self.assertEqual(-1, T.indexOf(''))
-        s = 'fools and stuff'
-        self.assertEqual(4, T.indexOf(s))
-        self.assertEqual(-1, T.indexOf(s[1:]))
+        self.assertEqual(('ba', 2), T.item('bar'))
+        self.assertEqual(1, T.value('fool'))
+        self.assertRaises(KeyError, T.key, 'foo')
         T[''] = 0
-        self.assertEqual(0, T.indexOf(''))
-        self.assertEqual(3, T.indexOf('bazar'))
+        self.assertEqual(('', 0), T.item(''))
+        self.assertEqual('', T.key('foo'))
 
+    def testFakeDefault(self):
+        T = trie()
+        fake = _NonTerminal()
+        self.assertEqual(fake, T.key('foo', default=fake))
 
-    def testPrefixTrieIsPrefix(self):
+    def testLongRootValue(self):
+        T = trie(1, 2)
+        self.assertEqual((1, 2), T[''])
+
+    def testIterItems(self):
+        T = trie()
+        T['ba'] = 2
+        T['baz'] = 3
+        T['fool'] = 1
+        self.assertListEqual(['ba', 'baz'], list(T.keys('bazar')))
+        self.assertListEqual([('fool', 1)], list(T.items('fools')))
+        self.assertListEqual([], list(T.values('others')))
+
+    def testIsPrefix(self):
         T = trie()
         T['bar'] = 2
         T['baz'] = 3
@@ -87,14 +114,15 @@ class Tests(TestCase):
         self.assertFalse(T.isPrefix('fools'))
         self.assertTrue(T.isPrefix(''))
 
-    def testPrefixTriePrefixIter(self):
+    def testIterPrefix(self):
         T = trie()
         T['b'] = 1
         T['baar'] = 2
         T['baahus'] = 3
-        self.assertListEqual(sorted(['baar', 'baahus']), sorted(list(T.prefixIter('ba'))))
-        self.assertListEqual(sorted(['baar', 'baahus']), sorted(list(T.prefixIter('baa'))))
-        self.assertListEqual(sorted(['b', 'baar', 'baahus']), sorted(list(T.prefixIter('b'))))
+        self.assertListEqual(sorted(['baar', 'baahus']), sorted(list(T.iter('ba'))))
+        self.assertListEqual(sorted(['baar', 'baahus']), sorted(list(T.iter('baa'))))
+        self.assertListEqual(sorted(['b', 'baar', 'baahus']), sorted(list(T.iter('b'))))
+        self.assertListEqual(sorted([]), sorted(list(T.iter('others'))))
 
 
 if __name__ == '__main__':

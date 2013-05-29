@@ -6,248 +6,312 @@
 .. License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
 
-from io import StringIO
+__author__ = 'Florian Leitner'
+__version__ = 1
 
 class _NonTerminal(): pass
+__NON_TERMINAL__ = _NonTerminal()
 
-NON_TERMINAL = _NonTerminal()
+# recursive functions
+
+def _count(node):
+    "Count the number of terminal nodes in this branch."
+    count = 0 if (node._value is __NON_TERMINAL__) else 1
+    for child in node._edges.values():
+        count += _count(child)
+    return count
+
+def _keys(node, accu):
+    "Yield keys of terminal nodes in this branch."
+    for key, value in _items(node, accu):
+        yield key
+
+def _items(node, accu):
+    "Yield key, value pairs of terminal nodes in this branch."
+    if node._value is not __NON_TERMINAL__:
+        yield ''.join(accu), node._value
+    for edge, child in node._edges.items():
+        accu.append(edge)
+        for key, value in _items(child, accu):
+            yield key, value
+        accu.pop()
+
+def _values(node):
+    "Yield values of terminal nodes in this branch."
+    if node._value is not __NON_TERMINAL__:
+        yield node._value
+    for child in node._edges.values():
+        for value in _values(child):
+            yield value
 
 class trie():
     """
     A PATRICIA trie implementation for efficient matching of string
-    collections.
+    collections on text.
 
-    Usage Example:
+    This class has an (Py2.7+) API nearly equal to dictionaries. The only
+    differences are
 
-    >>> T = trie() # add a few values
-    >>> T['key'] = 'value'
-    >>> T['kong'] = 'king'
-    >>> T[''] = 1
-    >>> '' in T # check if the value exits (note: empty node!)
+    Note that deletion is a "half-supported" operation only. The key seems
+    "removed", but the trie is not actually changed, only the node state is
+    changed from terminal to non-terminal. I.e., if you frequently delete keys,
+    the compaction will become fragmented and less efficient. To mitigate this
+    effect, make a copy of the trie (using a copy constructor idiom)::
+
+        T = trie(**T)
+
+    Usage Example::
+
+    >>> T = trie(1, key='value', king='kong') # a root value and two pairs
+    >>> '' in T # check if the value exits (note: the [empty] root is '')
     True
-    >>> 'king' in T
+    >>> 'kong' in T
     False
-    >>> T['kong'] # get an exact value
-    'king'
-    >>> T['king'] # errors for non-existing keys
+    >>> T['king'] # get the value for an exact key
+    'kong'
+    >>> T['kong'] # error from non-existing keys
     Traceback (most recent call last):
         ...
-    KeyError: 'king'
-    >>> len(T) # count the leafs in the tree
+    KeyError: 'kong'
+    >>> len(T) # count keys ("terminals") in the tree
     3
-    >>> s = 'keys and other stuff'
-    >>> T.indexOf(s) # report the (longest) offset if any key is a prefix of s
-    3
-    >>> T.indexOf(s[1:]) # problem: the empty node always matches!
-    0
-    >>> del T[''] # it is also fine to delete keys
-    >>> T.indexOf(s[1:]) # now reports -1 as index if no key is a prefix of s
-    -1
-    >>> T.isPrefix('k') # ... or check if a string is a prefix of any key
+    >>> sorted(T.keys()) # "traditional stuff": keys(), values(), and items()
+    ['', 'key', 'king']
+    >>> # scanning a text S with key(S), value(S), and item(S):
+    >>> S = 'keys and kewl stuff'
+    >>> T.key(S) # report the (longest) key that is a prefix of S
+    'key'
+    >>> T.value(S[1:]) # remember: the empty root always matches!
+    1
+    >>> del T[''] # interlude: deleting keys
+    >>> T.item(S[9:]) # raise error if no key is a prefix of S
+    Traceback (most recent call last):
+        ...
+    KeyError: 'k'
+    >>> # info: the error string above contains the matched path so far
+    >>> T.item(S[1:], None) # avoid the error by specifying a default
+    >>> # iterate all matching content with keys(S), values(S), and items(S):
+    >>> list(T.items(S))
+    [('key', 'value')]
+    >>> T.isPrefix('k') # reverse lookup: check if S is a prefix of any key
     True
-    >>> T.isPrefix('king')
+    >>> T.isPrefix('kong')
     False
-    >>> sorted(list(T.prefixIter('k'))) # and get all keys matching a prefix
-    ['key', 'kong']
+    >>> sorted(T.iter('k')) # and get all keys that have S as prefix
+    ['key', 'king']
     """
 
-    def __init__(self, value=NON_TERMINAL, edges=None):
-        self.edges = {} if edges is None else edges
-        self.value = value
+    def __init__(self, *value, **keys):
+        """
+        Create a new node.
+        Any arguments will be used as the value of this node.
+        If keyword arguments are given, they initialize a whole branch.
+        """
+        self._edges = {}
+        self._value = __NON_TERMINAL__
+        if len(value):
+            if len(value) == 1:
+                self._value = value[0]
+            else:
+                self._value = value
+        for key, val in keys.items():
+            self[key] = val
 
-    @staticmethod
-    def __recurse(target, node, suffix, idx):
-        for prefix in node.edges:
-            if suffix.startswith(prefix, idx):
-                return target(node.edges[prefix], suffix, idx + len(prefix))
-        raise KeyError(suffix)
+    def _find(self, path, offset):
+        for edge in self._edges:
+            if path.startswith(edge, offset):
+                return self._edges[edge], offset + len(edge)
+        else:
+            return None, offset # return None
+
+    def _next(self, path, offset):
+        for edge in self._edges:
+            if path.startswith(edge, offset):
+                return self._edges[edge], offset + len(edge)
+        else:
+            raise KeyError(path) # raise error
+
+    def _scan(self, string, rval_fun):
+        node = self
+        idx = 0
+        while node is not None:
+            if node._value is not __NON_TERMINAL__:
+                yield rval_fun(string, idx, node._value)
+            node, idx = node._find(string, idx)
 
     def __setitem__(self, key, value):
-        trie._setRecursion(self, key, 0, value)
-
-    @staticmethod
-    def _setRecursion(node, s, idx, value):
-        if len(s) == idx:
-            node.value = value
-        else:
-            for prefix in node.edges:
-                # if the whole prefix matches, recurse:
-                if s.startswith(prefix, idx):
-                    return trie._setRecursion(
-                        node.edges[prefix], s, idx + len(prefix), value
-                    )
-                elif prefix[0] == s[idx]:
-                    # find the longest common prefix:
+        node = self
+        keylen = len(key)
+        idx = 0
+        while keylen != idx:
+            for edge in node._edges:
+                # if the whole prefix matches, advance:
+                if key.startswith(edge, idx):
+                    node = node._edges[edge]
+                    idx += len(edge)
+                    break
+                # check if the prefix could match (part of) s:
+                elif edge[0] == key[idx]:
+                    # and split on the longest common prefix
                     pos = 1
-                    while prefix[pos] == s[idx + pos]:
+                    last = max(len(edge), keylen - idx)
+                    while pos < last and edge[pos] == key[idx + pos]:
                         pos += 1
                     split = trie()
-                    split.edges[prefix[pos:]] = node.edges[prefix]
-                    node.edges[prefix[:pos]] = split
-                    del node.edges[prefix]
-                    return trie._setRecursion(split, s, idx + pos, value)
-                # no common prefix, create a completely new node
-            node.edges[s[idx:]] = trie(value)
-
-    def __getitem__(self, item):
-        return trie._getRecursion(self, item, 0)
-
-    @staticmethod
-    def _getRecursion(node, s, idx):
-        if len(s) == idx:
-            if node.value is NON_TERMINAL:
-                raise KeyError(s)
+                    split._edges[edge[pos:]] = node._edges[edge]
+                    node._edges[edge[:pos]] = split
+                    del node._edges[edge]
+                    node = split
+                    idx += pos
+                    break
+            # no common prefix, create a completely new node
             else:
-                return node.value
-        else:
-            return trie.__recurse(node._getRecursion, node, s, idx)
+                node._edges[key[idx:]] = trie(value)
+        node._value = value
 
-    def __contains__(self, item):
-        return trie._containsRecursion(self, item, 0)
-
-    @staticmethod
-    def _containsRecursion(node, s, idx):
-        if len(s) == idx:
-            if node.value is NON_TERMINAL:
-                return False
-            else:
-                return True
+    def __getitem__(self, key):
+        node = self
+        keylen = len(key)
+        idx = 0
+        while keylen != idx:
+            node, idx = node._next(key, idx)
+        if node._value is __NON_TERMINAL__:
+            raise KeyError(key)
         else:
-            try:
-                return trie.__recurse(
-                    trie._containsRecursion, node, s, idx
-                )
-            except KeyError:
-                return False
+            return node._value
 
     def __delitem__(self, key):
-        trie._delRecursion(self, key, 0)
+        node = self
+        keylen = len(key)
+        idx = 0
+        while keylen != idx:
+            node, idx = node._next(key, idx)
+        if node._value is __NON_TERMINAL__:
+            raise KeyError(key)
+        node._value = __NON_TERMINAL__
 
-    @staticmethod
-    def _delRecursion(node, s, idx):
-        if len(s) == idx:
-            if node.value is NON_TERMINAL:
-                raise KeyError(s)
-            else:
-                node.value = NON_TERMINAL
-        else:
-            trie.__recurse(node._delRecursion, node, s, idx)
+    def __contains__(self, key):
+        node = self
+        keylen = len(key)
+        idx = 0
+        while idx != keylen and node is not None:
+            node, idx = node._find(key, idx)
+        return False if node is None else (node._value is not __NON_TERMINAL__)
 
     def __iter__(self):
-        for k in trie._iterRecursion(self, StringIO()):
-            yield k.getvalue()
+        return _keys(self, [])
 
     def __len__(self):
-        return sum(trie._countRecursion(self))
+        return _count(self)
 
-    @staticmethod
-    def _countRecursion(node):
-        if node.value is not NON_TERMINAL:
-            yield 1
-        for child in node.edges.values():
-            for i in trie._countRecursion(child):
-                yield i
-
-    @staticmethod
-    def _iterRecursion(node, accu):
-        offset = accu.tell()
-        if node.value is not NON_TERMINAL:
-            yield accu
-        for prefix in node.edges:
-            accu.write(prefix)
-            for key in trie._iterRecursion(node.edges[prefix], accu):
-                yield key
-            accu.seek(offset)
-            accu.truncate()
-
-    def __str__(self):
-        string = StringIO()
-        string.write('<trie{')
+    def __repr__(self):
+        string = ['trie({']
         first = True
-        for k in self:
+        for key, value in _items(self, []):
             if first: first = False
-            else: string.write(', ')
-            string.write(repr(k))
-            string.write(': ')
-            string.write(repr(self[k]))
-        string.write('}>')
-        return string.getvalue()
+            else: string.append(', ')
+            string.append(repr(key))
+            string.append(': ')
+            string.append(repr(value))
+        string.append('})')
+        return ''.join(string)
 
-    def indexOf(self, string):
+    def key(self, string, default=__NON_TERMINAL__):
         """
-        Returns the end of the longest matching key at the beginning of the
-        string or -1 if no match was found.
+        Return the longest key that is a prefix of `string`.
+        Raise a KeyError or return a `default` if no key is found.
         """
-        return trie._indexRecursion(self, string, 0)
+        result = self.item(string, default)
+        return result[0] if result is not default else result
 
-    @staticmethod
-    def _indexRecursion(node, s, idx):
-        if len(s) == idx:
-            return trie.__indexCheck(node.value, idx)
+    def keys(self, string=None):
+        "Return all keys (that are a prefix of `string`)."
+        if string is None:
+            return _keys(self, [])
         else:
-            try:
-                return trie.__recurse(
-                    trie._indexRecursion, node, s, idx
-                )
-            except KeyError:
-                return trie.__indexCheck(node.value, idx)
+            return self._scan(string, (lambda string, idx, value: string[:idx]))
 
-    @staticmethod
-    def __indexCheck(value, idx):
-        if value is NON_TERMINAL:
-            if idx == 0:
-                return -1
-            else:
-                raise KeyError()
+    def value(self, string, default=__NON_TERMINAL__):
+        """
+        Return the value of the longest key that is a prefix of `string`.
+        Raise a KeyError or return a `default` if no key is found.
+        """
+        result = self.item(string, default)
+        return result[1] if result is not default else result
+
+    def values(self, string=None):
+        "Return all values (for keys that are a prefix of `string`)."
+        if string is None:
+            return _values(self)
         else:
-            return idx
+            return self._scan(string, (lambda string, idx, value: value))
+
+    def item(self, string, default=__NON_TERMINAL__):
+        """
+        Return the key, value pair of the longest key that is a prefix of
+        `string`.
+        Raise a KeyError or return a `default` if no key is found.
+        """
+        node = self
+        strlen = len(string)
+        idx = 0
+        last = self._value
+        while idx < strlen:
+            node, idx = node._find(string, idx)
+            if node is None:
+                break
+            elif node._value is not __NON_TERMINAL__:
+              last = node._value
+        if last is not __NON_TERMINAL__:
+            return string[:idx], last
+        elif default is not __NON_TERMINAL__:
+            return default
+        else:
+            raise KeyError(string[:idx])
+
+    def items(self, string=None):
+        "Return all key, value pairs (for keys that are a prefix of `string`)."
+        if string is None:
+            return _items(self, [])
+        else:
+            return self._scan(string, (lambda string, idx, value: (string[:idx], value)))
 
     def isPrefix(self, string):
-        """
-        Returns True if the string is a prefix of any of the keys in the
-        trie, False otherwise.
-        """
-        return trie._prefixRecursion(self, string, 0, len(string))
+        "Return True if any key starts with `string`."
+        node = self
+        strlen = len(string)
+        idx = 0
+        while idx < strlen:
+            len_left = strlen - idx
+            for edge, child in node._edges.items():
+                elen = len(edge)
+                prefix = edge[:len_left] if (len_left < elen) else edge
+                if string.startswith(prefix, idx):
+                    node = child
+                    idx += elen
+                    break
+            else:
+                return False
+        return True
 
-    def prefixIter(self, prefix):
-        """
-        Return an iterator over all keys that have the given prefix.
-        """
-        return trie._prefixIterRecursion(self, prefix, 0, len(prefix))
-
-    @staticmethod
-    def _prefixIterRecursion(node, s, idx, slen):
-        if slen == idx:
-            accu = StringIO()
-            accu.write(s)
-            for k in trie._iterRecursion(node, accu):
-                yield k.getvalue()
-        else:
-            for prefix in node.edges:
-                if s.startswith(prefix, idx):
-                    for k in trie._prefixIterRecursion(
-                            node.edges[prefix], s, idx + len(prefix), slen
-                        ):
-                        yield k
-                elif slen < idx + len(prefix):
-                    p = prefix[:slen-idx]
-                    if s.startswith(p, idx):
-                        accu = StringIO()
-                        accu.write(s[:idx])
-                        accu.write(prefix)
-                        for k in trie._iterRecursion(node.edges[prefix], accu):
-                            yield k.getvalue()
-
-    @staticmethod
-    def _prefixRecursion(node, s, idx, slen):
-        if slen == idx:
-            return True
-        else:
-            for prefix in node.edges:
-                p = prefix[:slen-idx]
-                if s.startswith(p, idx):
-                    return trie._prefixRecursion(
-                        node.edges[prefix], s, idx + len(p), slen
-                    )
-            return False
-
+    def iter(self, prefix):
+        "Return an iterator over all keys that start with `prefix`."
+        node = self
+        plen = len(prefix)
+        idx = 0
+        while idx < plen:
+            try:
+                node, idx = node._next(prefix, idx)
+            except KeyError:
+                break
+        accu = [prefix]
+        if idx != plen:
+            remainder = prefix[idx:]
+            for edge in node._edges:
+                if edge.startswith(remainder):
+                    node = node._edges[edge]
+                    accu.append(edge[len(remainder):])
+                    break
+            else:
+                return iter([])
+        return _keys(node, accu)
