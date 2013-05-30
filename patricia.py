@@ -7,7 +7,7 @@
 """
 
 __author__ = 'Florian Leitner'
-__version__ = 1
+__version__ = 2
 
 class _NonTerminal(): pass
 __NON_TERMINAL__ = _NonTerminal()

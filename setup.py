@@ -1,11 +1,12 @@
 from distutils.core import setup
+import patricia
 
 with open('README.rst') as file:
     long_description = file.read()
 
 setup(
     name='patricia-trie',
-    version='1',
+    version=str(patricia.__version__),
     description='A pure Python implementation of a PATRICIA trie.',
     long_description=long_description,
     license='Apache License v2',
