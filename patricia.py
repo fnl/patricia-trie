@@ -218,14 +218,14 @@ class trie():
 
     def key(self, string, default=__NON_TERMINAL__):
         """
-        Return the longest key that is a prefix of `string`.
-        Raise a KeyError or return a `default` if no key is found.
+        Return the longest key that is a prefix of ``string``.
+        Raise a KeyError or return a ``default`` if no key is found.
         """
         result = self.item(string, default)
         return result[0] if result is not default else result
 
     def keys(self, string=None):
-        "Return all keys (that are a prefix of `string`)."
+        "Return all keys (that are a prefix of ``string``)."
         if string is None:
             return _keys(self, [])
         else:
@@ -233,14 +233,14 @@ class trie():
 
     def value(self, string, default=__NON_TERMINAL__):
         """
-        Return the value of the longest key that is a prefix of `string`.
-        Raise a KeyError or return a `default` if no key is found.
+        Return the value of the longest key that is a prefix of ``string``.
+        Raise a KeyError or return a ``default`` if no key is found.
         """
         result = self.item(string, default)
         return result[1] if result is not default else result
 
     def values(self, string=None):
-        "Return all values (for keys that are a prefix of `string`)."
+        "Return all values (for keys that are a prefix of ``string``)."
         if string is None:
             return _values(self)
         else:
@@ -249,8 +249,8 @@ class trie():
     def item(self, string, default=__NON_TERMINAL__):
         """
         Return the key, value pair of the longest key that is a prefix of
-        `string`.
-        Raise a KeyError or return a `default` if no key is found.
+        ``string``.
+        Raise a KeyError or return a ``default`` if no key is found.
         """
         node = self
         strlen = len(string)
@@ -270,14 +270,14 @@ class trie():
             raise KeyError(string[:idx])
 
     def items(self, string=None):
-        "Return all key, value pairs (for keys that are a prefix of `string`)."
+        "Return all key, value pairs (for keys that are a prefix of ``string``)."
         if string is None:
             return _items(self, [])
         else:
             return self._scan(string, (lambda string, idx, value: (string[:idx], value)))
 
     def isPrefix(self, string):
-        "Return True if any key starts with `string`."
+        "Return True if any key starts with ``string``."
         node = self
         strlen = len(string)
         idx = 0
@@ -295,7 +295,7 @@ class trie():
         return True
 
     def iter(self, prefix):
-        "Return an iterator over all keys that start with `prefix`."
+        "Return an iterator over all keys that start with ``prefix``."
         node = self
         plen = len(prefix)
         idx = 0
