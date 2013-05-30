@@ -44,13 +44,14 @@ def _values(node):
         for value in _values(child):
             yield value
 
+# main class
+
 class trie():
     """
     A PATRICIA trie implementation for efficient matching of string
     collections on text.
 
-    This class has an (Py2.7+) API nearly equal to dictionaries. The only
-    differences are
+    This class has an (Py2.7+) API nearly equal to dictionaries.
 
     Note that deletion is a "half-supported" operation only. The key seems
     "removed", but the trie is not actually changed, only the node state is
