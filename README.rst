@@ -68,10 +68,10 @@ keys and scanning with ``key(S, None, start=i)`` at every offset ``i`` in the
 string ``S`` is perfectly fine (because the return value will be the key
 string iff a full match was made and ``None`` otherwise)::
 
->>> T = trie(present=None)
->>> T.key('is absent here', None, start=3) # start scanning at offset 3
->>> T.key('is present here', None, start=3) # start scanning at offset 3
-'present'
+    >>> T = trie(present=None)
+    >>> T.key('is absent here', None, start=3) # start scanning at offset 3
+    >>> T.key('is present here', None, start=3) # start scanning at offset 3
+    'present'
 
 History
 -------
