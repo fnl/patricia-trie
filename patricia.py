@@ -2,12 +2,25 @@
 .. py:module:: patricia
    :synopsis: A PATRICIA trie implementation.
 
+A PATRICIA trie implementation for efficient matching of string collections on
+text.
+
+This class has an (Py2.7+) API nearly equal to dictionaries.
+
+Note that deletion is a "half-supported" operation only. The key appears
+"removed", but the trie is not actually changed, only the node state is
+changed from terminal to non-terminal. I.e., if you frequently delete keys,
+the compaction will become fragmented and less efficient. To mitigate this
+effect, make a copy of the trie (using a copy constructor idiom)::
+
+    T = trie(**T)
+
 .. moduleauthor:: Florian Leitner <florian.leitner@gmail.com>
 .. License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
 
 __author__ = 'Florian Leitner'
-__version__ = 2
+__version__ = '3'
 
 class _NonTerminal(): pass
 __NON_TERMINAL__ = _NonTerminal()
@@ -48,20 +61,7 @@ def _values(node):
 
 class trie():
     """
-    A PATRICIA trie implementation for efficient matching of string
-    collections on text.
-
-    This class has an (Py2.7+) API nearly equal to dictionaries.
-
-    Note that deletion is a "half-supported" operation only. The key seems
-    "removed", but the trie is not actually changed, only the node state is
-    changed from terminal to non-terminal. I.e., if you frequently delete keys,
-    the compaction will become fragmented and less efficient. To mitigate this
-    effect, make a copy of the trie (using a copy constructor idiom)::
-
-        T = trie(**T)
-
-    Usage Example::
+    **Usage Example**::
 
     >>> T = trie(1, key='value', king='kong') # a root value and two pairs
     >>> '' in T # check if the value exits (note: the [empty] root is '')
@@ -132,9 +132,8 @@ class trie():
         else:
             raise KeyError(path) # raise error
 
-    def _scan(self, string, rval_fun):
+    def _scan(self, string, rval_fun, idx):
         node = self
-        idx = 0
         while node is not None:
             if node._value is not __NON_TERMINAL__:
                 yield rval_fun(string, idx, node._value)
@@ -168,7 +167,9 @@ class trie():
             # no common prefix, create a completely new node
             else:
                 node._edges[key[idx:]] = trie(value)
-        node._value = value
+                break
+        else:
+            node._value = value
 
     def __getitem__(self, key):
         node = self
@@ -217,37 +218,39 @@ class trie():
         string.append('})')
         return ''.join(string)
 
-    def key(self, string, default=__NON_TERMINAL__):
+    def key(self, string, default=__NON_TERMINAL__, start=0):
         """
         Return the longest key that is a prefix of ``string``.
         Raise a KeyError or return a ``default`` if no key is found.
         """
-        result = self.item(string, default)
+        result = self.item(string, default, start)
         return result[0] if result is not default else result
 
-    def keys(self, string=None):
+    def keys(self, string=None, start=0):
         "Return all keys (that are a prefix of ``string``)."
         if string is None:
             return _keys(self, [])
         else:
-            return self._scan(string, (lambda string, idx, value: string[:idx]))
+            return self._scan(
+                string, (lambda string, idx, value: string[start:idx]), start
+            )
 
-    def value(self, string, default=__NON_TERMINAL__):
+    def value(self, string, default=__NON_TERMINAL__, start=0):
         """
         Return the value of the longest key that is a prefix of ``string``.
         Raise a KeyError or return a ``default`` if no key is found.
         """
-        result = self.item(string, default)
+        result = self.item(string, default, start)
         return result[1] if result is not default else result
 
-    def values(self, string=None):
+    def values(self, string=None, start=0):
         "Return all values (for keys that are a prefix of ``string``)."
         if string is None:
             return _values(self)
         else:
-            return self._scan(string, (lambda string, idx, value: value))
+            return self._scan(string, (lambda string, i, value: value), start)
 
-    def item(self, string, default=__NON_TERMINAL__):
+    def item(self, string, default=__NON_TERMINAL__, start=0):
         """
         Return the key, value pair of the longest key that is a prefix of
         ``string``.
@@ -255,7 +258,7 @@ class trie():
         """
         node = self
         strlen = len(string)
-        idx = 0
+        idx = start
         last = self._value
         while idx < strlen:
             node, idx = node._find(string, idx)
@@ -268,14 +271,18 @@ class trie():
         elif default is not __NON_TERMINAL__:
             return default
         else:
-            raise KeyError(string[:idx])
+            raise KeyError(string[start:idx])
 
-    def items(self, string=None):
+    def items(self, string=None, start=0):
         "Return all key, value pairs (for keys that are a prefix of ``string``)."
         if string is None:
             return _items(self, [])
         else:
-            return self._scan(string, (lambda string, idx, value: (string[:idx], value)))
+            return self._scan(
+                string,
+                (lambda string, idx, value: (string[start:idx], value)),
+                start
+            )
 
     def isPrefix(self, string):
         "Return True if any key starts with ``string``."
@@ -285,11 +292,10 @@ class trie():
         while idx < strlen:
             len_left = strlen - idx
             for edge, child in node._edges.items():
-                elen = len(edge)
-                prefix = edge[:len_left] if (len_left < elen) else edge
+                prefix = edge[:len_left] if (len_left < len(edge)) else edge
                 if string.startswith(prefix, idx):
                     node = child
-                    idx += elen
+                    idx += len(edge)
                     break
             else:
                 return False

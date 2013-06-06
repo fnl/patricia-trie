@@ -62,6 +62,21 @@ effect, make a copy of the trie (using a copy constructor idiom)::
 
     T = trie(**T)
 
+History
+-------
+
+1. Initial release package.
+2. Full documentation and corrections.
+3. Added optional keyword parameters to indicate an offset ``start`` when
+   scanning a string with the methods key(), keys(), item(), items(), value(),
+   and values(), so it is not necessary to create substrings for each scan::
+
+   >>> # Old usage to scan 'string' in 'the string' was:
+   >>> T.keys('the string'[4:])
+   >>> # With the new optional keyword parameter:
+   >>> T.keys('the string', start=4)
+
+
 Copyright
 ---------
 

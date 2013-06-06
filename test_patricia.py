@@ -124,6 +124,40 @@ class Tests(TestCase):
         self.assertListEqual(sorted(['b', 'baar', 'baahus']), sorted(list(T.iter('b'))))
         self.assertListEqual(sorted([]), sorted(list(T.iter('others'))))
 
+    def testOffsetMatching(self):
+        T = trie()
+        T['foo'] = 1
+        T['baar'] = 2
+        T['baarhus'] = 3
+        T['bazar'] = 4
+        txt = 'The fool baal baarhus in the bazar!'
+        keys = []
+        values = []
+        items = []
+        for i in range(len(txt)):
+            values.extend(T.values(txt, i))
+        for i in range(len(txt)):
+            keys.extend(T.keys(txt, i))
+        for i in range(len(txt)):
+            items.extend(T.items(txt, i))
+        self.assertListEqual([1, 2, 3, 4], values)
+        self.assertListEqual(['foo', 'baar', 'baarhus', 'bazar'], keys)
+        self.assertListEqual([('foo', 1), ('baar', 2), ('baarhus', 3), ('bazar', 4)], items)
+
+    def testKeyPresenceOnly(self):
+        T = trie()
+        T['foo'] = True
+        T['baar'] = True
+        T['baarhus'] = True
+        T['bazar'] = True
+        txt = 'The fool baal baarhus in the bazar!'
+        presence = [4, 14, 29]
+        for i in range(len(txt)):
+            if T.value(txt, False, i):
+                self.assertTrue(i in presence,
+                                '{} {} "{}"'.format(str(presence), i, txt[i:]))
+                presence.remove(i)
+        self.assertEqual(0, len(presence), str(presence))
 
 if __name__ == '__main__':
     main()

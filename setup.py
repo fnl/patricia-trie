@@ -6,7 +6,7 @@ with open('README.rst') as file:
 
 setup(
     name='patricia-trie',
-    version=str(patricia.__version__),
+    version=patricia.__version__,
     description='A pure Python implementation of a PATRICIA trie.',
     long_description=long_description,
     license='Apache License v2',
