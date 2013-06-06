@@ -13,8 +13,7 @@ __version__ = 1
 
 class TrieTests(TestCase):
     def testInitContains(self):
-        T = trie()
-        T['key'] = 'value'
+        T = trie(key='value')
         T = trie(**T)
         self.assertTrue('key' in T)
         self.assertFalse('keys' in T)
@@ -39,19 +38,14 @@ class TrieTests(TestCase):
         self.assertEqual(T['baz'], 3)
 
     def testEmptyStringKey(self):
-        T = trie()
-        T['foo'] = 1
-        T[''] = 2
+        T = trie(2, foo=1)
         self.assertTrue('foo' in T)
         self.assertTrue('' in T)
         del T['']
         self.assertRaises(KeyError, T.__getitem__, '')
 
     def testIterator(self):
-        T = trie()
-        T['ba'] = 2
-        T['baz'] = 3
-        T['fool'] = 1
+        T = trie(ba=2, baz=3, fool=1)
         self.assertListEqual(sorted(['fool', 'ba', 'baz']), sorted(list(T)))
         T[''] = 0
         self.assertEqual(sorted(['', 'fool', 'ba', 'baz']), sorted(list(T)))
@@ -97,19 +91,13 @@ class TrieTests(TestCase):
         self.assertEqual((1, 2), T[''])
 
     def testIterItems(self):
-        T = trie()
-        T['ba'] = 2
-        T['baz'] = 3
-        T['fool'] = 1
+        T = trie(ba=2, baz=3, fool=1)
         self.assertListEqual(['ba', 'baz'], list(T.keys('bazar')))
         self.assertListEqual([('fool', 1)], list(T.items('fools')))
         self.assertListEqual([], list(T.values('others')))
 
     def testIsPrefix(self):
-        T = trie()
-        T['bar'] = 2
-        T['baz'] = 3
-        T['fool'] = 1
+        T = trie(bar=2, baz=3, fool=1)
         self.assertTrue(T.isPrefix('ba'))
         self.assertFalse(T.isPrefix('fools'))
         self.assertTrue(T.isPrefix(''))
@@ -145,11 +133,7 @@ class TrieTests(TestCase):
         self.assertListEqual([('foo', 1), ('baar', 2), ('baarhus', 3), ('bazar', 4)], items)
 
     def testKeyPresenceOnly(self):
-        T = trie()
-        T['foo'] = True
-        T['baar'] = True
-        T['baarhus'] = True
-        T['bazar'] = True
+        T = trie(foo=True, baar=True, baarhus=True, bazar=True)
         txt = 'The fool baal baarhus in the bazar!'
         presence = [4, 14, 29]
         for i in range(len(txt)):

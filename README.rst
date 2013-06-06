@@ -100,6 +100,8 @@ History
    Other updates: Switched from using dictionaries to two-tuple lists
    internally (thanks to Pedro Gaio for the suggestion!) to improve the
    overall performance a bit (about 20% faster on simple tests).
+5. *Bugfix*: When splitting edges while adding a new key that is shorter than
+   the current edge, a index error would have occurred.
 
 Copyright
 ---------

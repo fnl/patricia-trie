@@ -31,7 +31,7 @@ string iff a full match was made and ``None`` otherwise)::
 """
 
 __author__ = 'Florian Leitner'
-__version__ = '4'
+__version__ = '5'
 
 class _NonTerminal(): pass
 __NON_TERMINAL__ = _NonTerminal()
@@ -166,7 +166,7 @@ class trie():
                 elif edge[0] == key[idx]:
                     # and split on the longest common prefix
                     pos = 1
-                    last = max(len(edge), keylen - idx)
+                    last = min(len(edge), keylen - idx)
                     while pos < last and edge[pos] == key[idx + pos]:
                         pos += 1
                     split = trie()
