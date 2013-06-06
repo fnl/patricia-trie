@@ -11,7 +11,7 @@ from patricia import trie, _NonTerminal
 __author__ = 'Florian Leitner'
 __version__ = 1
 
-class Tests(TestCase):
+class TrieTests(TestCase):
     def testInitContains(self):
         T = trie()
         T['key'] = 'value'
@@ -90,7 +90,7 @@ class Tests(TestCase):
     def testFakeDefault(self):
         T = trie()
         fake = _NonTerminal()
-        self.assertEqual(fake, T.key('foo', default=fake))
+        self.assertEqual(fake, T.value('foo', default=fake))
 
     def testLongRootValue(self):
         T = trie(1, 2)

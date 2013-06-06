@@ -15,12 +15,33 @@ effect, make a copy of the trie (using a copy constructor idiom)::
 
     T = trie(**T)
 
+Tip: use ``True`` as the value of items and ``False`` as the default value if
+scanning with ``value(str, default)``::
+
+>>> T = trie(present=True)
+>>> T.value('is absent here', False, start=3) # start scanning at offset 3
+False
+>>> T.value('is present here', False, start=3) # start scanning at offset 3
+True
+
+Note that if you are only interested in scanning for the presence of keys,
+but do not care about mapping a value to each key, **the above example
+is irrelevant** and using ``None`` as the value of your keys and scanning with
+``key(S, None, start=i)`` at every offset ``i`` in the string ``S`` is
+perfectly fine (because the return value will be the key string iff a full
+match was made and ``None`` otherwise)::
+
+>>> T['present'] = None
+>>> T.key('is absent here', None, start=3) # start scanning at offset 3
+>>> T.key('is present here', None, start=3) # start scanning at offset 3
+'present'
+
 .. moduleauthor:: Florian Leitner <florian.leitner@gmail.com>
 .. License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
 
 __author__ = 'Florian Leitner'
-__version__ = '3'
+__version__ = '4'
 
 class _NonTerminal(): pass
 __NON_TERMINAL__ = _NonTerminal()
@@ -30,7 +51,7 @@ __NON_TERMINAL__ = _NonTerminal()
 def _count(node):
     "Count the number of terminal nodes in this branch."
     count = 0 if (node._value is __NON_TERMINAL__) else 1
-    for child in node._edges.values():
+    for _, child in node._edges:
         count += _count(child)
     return count
 
@@ -43,7 +64,7 @@ def _items(node, accu):
     "Yield key, value pairs of terminal nodes in this branch."
     if node._value is not __NON_TERMINAL__:
         yield ''.join(accu), node._value
-    for edge, child in node._edges.items():
+    for edge, child in node._edges:
         accu.append(edge)
         for key, value in _items(child, accu):
             yield key, value
@@ -53,7 +74,7 @@ def _values(node):
     "Yield values of terminal nodes in this branch."
     if node._value is not __NON_TERMINAL__:
         yield node._value
-    for child in node._edges.values():
+    for edge, child in node._edges:
         for value in _values(child):
             yield value
 
@@ -63,7 +84,7 @@ class trie():
     """
     **Usage Example**::
 
-    >>> T = trie(1, key='value', king='kong') # a root value and two pairs
+    >>> T = trie(None, key='value', king='kong') # a root value and two pairs
     >>> '' in T # check if the value exits (note: the [empty] root is '')
     True
     >>> 'kong' in T
@@ -82,15 +103,15 @@ class trie():
     >>> S = 'keys and kewl stuff'
     >>> T.key(S) # report the (longest) key that is a prefix of S
     'key'
-    >>> T.value(S[1:]) # remember: the empty root always matches!
-    1
-    >>> del T[''] # interlude: deleting keys
-    >>> T.item(S[9:]) # raise error if no key is a prefix of S
+    >>> T.value(S, start=9) # using offsets; NB: empty root always matches!
+    >>> del T[''] # interlude: deleting keys and root is the empty key
+    >>> T.item(S, start=9) # raise error if no key is a prefix of S
     Traceback (most recent call last):
         ...
     KeyError: 'k'
     >>> # info: the error string above contains the matched path so far
-    >>> T.item(S[1:], None) # avoid the error by specifying a default
+    >>> T.item(S, None, 9) # avoid the error by specifying a default
+    (None, None)
     >>> # iterate all matching content with keys(S), values(S), and items(S):
     >>> list(T.items(S))
     [('key', 'value')]
@@ -105,10 +126,11 @@ class trie():
     def __init__(self, *value, **keys):
         """
         Create a new node.
-        Any arguments will be used as the value of this node.
+        Any arguments will be used as the ``value`` of this node.
         If keyword arguments are given, they initialize a whole branch.
+        Note that ``None`` is a valid value for a node.
         """
-        self._edges = {}
+        self._edges = []
         self._value = __NON_TERMINAL__
         if len(value):
             if len(value) == 1:
@@ -119,16 +141,16 @@ class trie():
             self[key] = val
 
     def _find(self, path, offset):
-        for edge in self._edges:
+        for edge, child in self._edges:
             if path.startswith(edge, offset):
-                return self._edges[edge], offset + len(edge)
+                return child, offset + len(edge)
         else:
             return None, offset # return None
 
     def _next(self, path, offset):
-        for edge in self._edges:
+        for edge, child in self._edges:
             if path.startswith(edge, offset):
-                return self._edges[edge], offset + len(edge)
+                return child, offset + len(edge)
         else:
             raise KeyError(path) # raise error
 
@@ -144,13 +166,13 @@ class trie():
         keylen = len(key)
         idx = 0
         while keylen != idx:
-            for edge in node._edges:
+            for edge, child in node._edges:
                 # if the whole prefix matches, advance:
                 if key.startswith(edge, idx):
-                    node = node._edges[edge]
+                    node = child
                     idx += len(edge)
                     break
-                # check if the prefix could match (part of) s:
+                # split edge if prefix matches (part of) the key:
                 elif edge[0] == key[idx]:
                     # and split on the longest common prefix
                     pos = 1
@@ -158,15 +180,15 @@ class trie():
                     while pos < last and edge[pos] == key[idx + pos]:
                         pos += 1
                     split = trie()
-                    split._edges[edge[pos:]] = node._edges[edge]
-                    node._edges[edge[:pos]] = split
-                    del node._edges[edge]
+                    split._edges.append((edge[pos:], child))
+                    node._edges.remove((edge, child))
+                    node._edges.append((edge[:pos], split))
                     node = split
                     idx += pos
                     break
             # no common prefix, create a completely new node
             else:
-                node._edges[key[idx:]] = trie(value)
+                node._edges.append((key[idx:], trie(value)))
                 break
         else:
             node._value = value
@@ -220,14 +242,18 @@ class trie():
 
     def key(self, string, default=__NON_TERMINAL__, start=0):
         """
-        Return the longest key that is a prefix of ``string``.
-        Raise a KeyError or return a ``default`` if no key is found.
+        Return the longest key that is a prefix of ``string`` (beginning at
+        ``start``).
+        If no key matches, raise a `KeyError` or return the ``default`` value
+        if it was set.
         """
-        result = self.item(string, default, start)
-        return result[0] if result is not default else result
+        return self.item(string, default, start)[0]
 
     def keys(self, string=None, start=0):
-        "Return all keys (that are a prefix of ``string``)."
+        """
+        Return all keys (that are a prefix of ``string`` (beginning at
+        ``start``)).
+        """
         if string is None:
             return _keys(self, [])
         else:
@@ -237,14 +263,18 @@ class trie():
 
     def value(self, string, default=__NON_TERMINAL__, start=0):
         """
-        Return the value of the longest key that is a prefix of ``string``.
-        Raise a KeyError or return a ``default`` if no key is found.
+        Return the value of the longest key that is a prefix of ``string``
+        (beginning at ``start``).
+        If no key matches, raise a `KeyError` or return the ``default`` value
+        if it was set.
         """
-        result = self.item(string, default, start)
-        return result[1] if result is not default else result
+        return self.item(string, default, start)[1]
 
     def values(self, string=None, start=0):
-        "Return all values (for keys that are a prefix of ``string``)."
+        """
+        Return all values (for keys that are a prefix of ``string`` (starting
+        at ``start``)).
+        """
         if string is None:
             return _values(self)
         else:
@@ -253,8 +283,9 @@ class trie():
     def item(self, string, default=__NON_TERMINAL__, start=0):
         """
         Return the key, value pair of the longest key that is a prefix of
-        ``string``.
-        Raise a KeyError or return a ``default`` if no key is found.
+        ``string`` (beginning at ``start``).
+        If no key matches, raise a `KeyError` or return the ``None``,
+        ``default`` pair if any ``default`` value was set.
         """
         node = self
         strlen = len(string)
@@ -265,16 +296,19 @@ class trie():
             if node is None:
                 break
             elif node._value is not __NON_TERMINAL__:
-              last = node._value
+                last = node._value
         if last is not __NON_TERMINAL__:
-            return string[:idx], last
+            return string[start:idx], last
         elif default is not __NON_TERMINAL__:
-            return default
+            return None, default
         else:
             raise KeyError(string[start:idx])
 
     def items(self, string=None, start=0):
-        "Return all key, value pairs (for keys that are a prefix of ``string``)."
+        """
+        Return all key, value pairs (for keys that are a prefix of ``string``
+        (beginning at ``start``)).
+        """
         if string is None:
             return _items(self, [])
         else:
@@ -291,7 +325,7 @@ class trie():
         idx = 0
         while idx < strlen:
             len_left = strlen - idx
-            for edge, child in node._edges.items():
+            for edge, child in node._edges:
                 prefix = edge[:len_left] if (len_left < len(edge)) else edge
                 if string.startswith(prefix, idx):
                     node = child
@@ -314,9 +348,9 @@ class trie():
         accu = [prefix]
         if idx != plen:
             remainder = prefix[idx:]
-            for edge in node._edges:
+            for edge, child in node._edges:
                 if edge.startswith(remainder):
-                    node = node._edges[edge]
+                    node = child
                     accu.append(edge[len(remainder):])
                     break
             else:
