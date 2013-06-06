@@ -79,10 +79,10 @@ History
 4. **Important API change**: item() now returns key, value pairs even when a
    default value is given, using ``None`` as the "key"::
 
-       >>> Old behaviour was:
+       >>> # Old behaviour was:
        >>> T.item('string', default=False)
        False
-       >>> While now, the same call produces:
+       >>> # While now, the same call produces:
        >>> T.item('string', default=False)
        None, False
 
