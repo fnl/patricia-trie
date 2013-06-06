@@ -54,13 +54,24 @@ Usage
     >>> list(T.items(S))
     [('key', 'value')]
 
-Note that deletion is a "half-supported" operation only. The key seems
+*Deleting* entries is a "half-supported" operation only. The key appears
 "removed", but the trie is not actually changed, only the node state is
 changed from terminal to non-terminal. I.e., if you frequently delete keys,
 the compaction will become fragmented and less efficient. To mitigate this
 effect, make a copy of the trie (using a copy constructor idiom)::
 
     T = trie(**T)
+
+If you are only interested in scanning for the *presence* of keys, but do not
+care about mapping a value to each key, using ``None`` as the value of your
+keys and scanning with ``key(S, None, start=i)`` at every offset ``i`` in the
+string ``S`` is perfectly fine (because the return value will be the key
+string iff a full match was made and ``None`` otherwise)::
+
+>>> T = trie(present=None)
+>>> T.key('is absent here', None, start=3) # start scanning at offset 3
+>>> T.key('is present here', None, start=3) # start scanning at offset 3
+'present'
 
 History
 -------
