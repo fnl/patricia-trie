@@ -15,23 +15,13 @@ effect, make a copy of the trie (using a copy constructor idiom)::
 
     T = trie(**T)
 
-Tip: use ``True`` as the value of items and ``False`` as the default value if
-scanning with ``value(str, default)``::
-
->>> T = trie(present=True)
->>> T.value('is absent here', False, start=3) # start scanning at offset 3
-False
->>> T.value('is present here', False, start=3) # start scanning at offset 3
-True
-
 Note that if you are only interested in scanning for the presence of keys,
-but do not care about mapping a value to each key, **the above example
-is irrelevant** and using ``None`` as the value of your keys and scanning with
-``key(S, None, start=i)`` at every offset ``i`` in the string ``S`` is
-perfectly fine (because the return value will be the key string iff a full
-match was made and ``None`` otherwise)::
+but do not care about mapping a value to each key, using ``None`` as the value
+of your keys and scanning with ``key(S, None, start=i)`` at every offset ``i``
+in the string ``S`` is perfectly fine (because the return value will be the
+key string iff a full match was made and ``None`` otherwise)::
 
->>> T['present'] = None
+>>> T = trie(present=None)
 >>> T.key('is absent here', None, start=3) # start scanning at offset 3
 >>> T.key('is present here', None, start=3) # start scanning at offset 3
 'present'
