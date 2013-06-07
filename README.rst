@@ -162,6 +162,9 @@ History
    list from update 4 against the simple (and newly added) ``time_patricia.py``
    "benchmark".
 8. *Bugfix*: Correct behavior when using a negative start index.
+   Added a comparison to `marisa-trie`_ - by now, it seems, patricia-trie
+   is roughly only a factor two slower than the marisa-trie PyPI version
+   wrapping a C library. Also makes it nice to compare the two usages.
 
 Copyright
 ---------
