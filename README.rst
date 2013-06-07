@@ -4,11 +4,14 @@ patricia-trie
 A pure Python 2.7+ implementation of a PATRICIA trie for effcient matching
 of string collections on text.
 
-Note that you probably first want to have a look at `marisa-trie`_ or its
-`PyPi package <https://github.com/kmike/marisa-trie/>`_ before using this.
+Note that you probably first want to have a look at the Python wrapper
+`marisa-trie`_ or its `PyPi package <https://github.com/kmike/marisa-trie/>`_
+before using particia-trie; according to the simple timeit comparisons, these
+wrappers for the C-based MARISA library are about twice as fast as this pure
+Python implementation.
 
-`patricia-trie`_ has a clean API that imitates the dict() API and works with
-Py3k.
+`patricia-trie`_ does have its merits, however - it is small, clear, and
+has a very clean interface that imitates the `dict` API and works with Py3k.
 
 Installation
 ------------
