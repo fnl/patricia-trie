@@ -76,9 +76,9 @@ string iff a full match was made and ``None`` otherwise)::
 History
 -------
 
-1. Initial release package.
-2. Full documentation and corrections.
-3. Added optional keyword parameters to indicate an offset ``start`` when
+1. Initial release.
+2. *Update*: Full documentation and corrections.
+3. *Feature*: optional keyword parameters to indicate an offset ``start`` when
    scanning a string with the methods key(), keys(), item(), items(), value(),
    and values(), so it is not necessary to slice strings for each scan::
 
@@ -97,22 +97,26 @@ History
        >>> T.item('string', default=False)
        None, False
 
-   Other updates: Switched from using dictionaries to two-tuple lists
+   *Improvement*: Switched from using dictionaries to two-tuple lists
    internally (thanks to Pedro Gaio for the suggestion!) to improve the
    overall performance a bit (about 20% faster on simple tests).
 5. *Bugfix*: When splitting edges while adding a new key that is shorter than
    the current edge, a index error would have occurred.
-6. Added optional keyword parameter ``end`` to the methods key(), keys(),
-   item(), items(), value(), and values(), so it is not necessary to scan
-   within a window::
+6. *Feature*: Added optional keyword parameter ``end`` to the methods key(),
+   keys(), item(), items(), value(), and values(), so it is not necessary to
+   scan within a window::
 
        T.key('string', start=2, end=3, default=None)
        T.keys('string', start=2, end=3)
 
+7. *Improvement*: Switched back to a very efficient internal dictionary
+   implementation; Runs about two- to three times as fast as the two-tuple
+   list from update 4 against the simple ``time_patricia.py`` "benchmark".
+
 Copyright
 ---------
 
-Copyright 2013, Florian Leitner, All rights reserved.
+Copyright 2013, Florian Leitner. All rights reserved.
 
 License
 -------
