@@ -13,10 +13,10 @@ effect, make a copy of the trie (using a copy constructor idiom)::
     T = trie(**T)
 
 If you are only interested in scanning for the *presence* of keys, but do not
-care about mapping a value to each key, using ``None`` as the value of your
+care about mapping a value to each key, using `None` as the value of your
 keys and scanning with ``key(S, i, j, None)`` at every offset ``i:j`` in the
 string ``S`` is perfectly fine (because the return value will be the key
-string iff a full match was made and ``None`` otherwise). In other words, it
+string iff a full match was made and `None` otherwise). In other words, it
 is not necessary to create slices of strings to scan in a window only::
 
     >>> T = trie(present=None)
@@ -123,7 +123,7 @@ class trie():
         Create a new tree node.
         Any arguments will be used as the ``value`` of this node.
         If keyword arguments are given, they initialize a whole ``branch``.
-        Note that ``None`` is a valid value for a node.
+        Note that `None` is a valid value for a node.
         """
         self._edges = {}
         self._value = __NON_TERMINAL__

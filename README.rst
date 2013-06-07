@@ -7,7 +7,8 @@ of string collections on text.
 Note that you probably first want to have a look at `marisa-trie`_ or its
 `PyPi package <https://github.com/kmike/marisa-trie/>`_ before using this.
 
-`patricia-trie` has a clean API that imitates the dict() API and works with Py3k.
+`patricia-trie`_ has a clean API that imitates the dict() API and works with
+Py3k.
 
 Installation
 ------------
@@ -87,7 +88,7 @@ trie(``*value``, ``**branch``)
     | Create a new tree node.
     | Any arguments will be used as the ``value`` of this node.
     | If keyword arguments are given, they initialize a whole ``branch``.
-    | Note that ``None`` is a valid value for a node.
+    | Note that `None` is a valid value for a node.
 
 trie.isPrefix(``prefix``)
     | Return True if any key starts with ``prefix``.
