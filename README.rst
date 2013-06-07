@@ -161,6 +161,7 @@ History
    implementation; Runs about two- to three times as fast as the two-tuple
    list from update 4 against the simple (and newly added) ``time_patricia.py``
    "benchmark".
+8. *Bufgix*: Ensured behavior when using a negative start index.
 
 Copyright
 ---------

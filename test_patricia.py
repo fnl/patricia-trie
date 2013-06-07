@@ -153,5 +153,12 @@ class TrieTests(TestCase):
         self.assertEqual(1, T.value("a foobar!", 2, 7))
         self.assertEqual(('foobar', 2), T.item("a foobar!", 2, 8))
 
+    def testBorderlineValues(self):
+        T = trie(foo=1, bar=2)
+        self.assertEqual('foo', T.key('foo', -3))
+        self.assertEqual('foo', T.key('foo', -4))
+        self.assertEqual(None, T.key('foo', 2, 1, None))
+        self.assertEqual(None, T.key('foo', 0, -7, None))
+
 if __name__ == '__main__':
     main()

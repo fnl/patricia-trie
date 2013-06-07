@@ -28,7 +28,7 @@ License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
 
 __author__ = 'Florian Leitner <florian.leitner@gmail.com>'
-__version__ = '7'
+__version__ = '8'
 
 
 class _NonTerminal(): pass
@@ -118,7 +118,7 @@ class trie():
       ['key', 'king']
     """
 
-    def __init__(self, *value, **keys):
+    def __init__(self, *value, **branch):
         """
         Create a new tree node.
         Any arguments will be used as the ``value`` of this node.
@@ -132,7 +132,7 @@ class trie():
                 self._value = value[0]
             else:
                 self._value = value
-        for key, val in keys.items():
+        for key, val in branch.items():
             self[key] = val
 
     def _find(self, path, start, *end):
@@ -143,14 +143,18 @@ class trie():
         return None, start # return None
 
     def _next(self, path, start, *end):
-        if path[start] in self._edges:
+        try:
             edge, child = self._edges[path[start]]
             if path.startswith(edge, start, *end):
                 return child, start + len(edge)
+        except KeyError:
+            pass
         raise KeyError(path) # raise error
 
     def _scan(self, rvalFun, string, start=0, *end):
         node = self
+        if start < 0:
+            start = max(0, len(string) + start)
         while node is not None:
             if node._value is not __NON_TERMINAL__:
                 yield rvalFun(string, start, node._value)
@@ -287,6 +291,8 @@ class trie():
         """
         node = self
         strlen = len(string)
+        if start < 0:
+            start = max(0, strlen + start)
         end = strlen if end is None else end
         idx = start
         last = self._value
