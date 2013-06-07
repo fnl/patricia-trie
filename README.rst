@@ -6,7 +6,7 @@ of string collections on text.
 
 Note that you probably first want to have a look at the Python wrapper
 `marisa-trie`_ or its `PyPi package <https://github.com/kmike/marisa-trie/>`_
-before using particia-trie; according to the simple timeit comparisons, these
+before using particia-trie; according to simple timeit comparisons, these
 wrappers for the C-based MARISA library are about twice as fast as this pure
 Python implementation.
 
