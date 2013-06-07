@@ -21,38 +21,44 @@ Usage
 
 ::
 
-    >>> from patricia import trie
-    >>> T = trie(1, key='value', king='kong') # a root value and two pairs
+    >>> T = trie(None, key='value', king='kong') # a root value and two pairs
+    >>> T['four'] = 99 # setting new values as in a dict
     >>> '' in T # check if the value exits (note: the [empty] root is '')
     True
-    >>> 'kong' in T
+    >>> 'kong' in T # existence checks as in a dict
     False
-    >>> T['king'] # get the value for an exact key
+    >>> T['king'] # get the value for an exact key ... as in a dict
     'kong'
-    >>> T['kong'] # error from non-existing keys
+    >>> T['kong'] # error from non-existing keys (as in a dict)
     Traceback (most recent call last):
         ...
     KeyError: 'kong'
     >>> len(T) # count keys ("terminals") in the tree
-    3
-    >>> sorted(T.keys()) # "traditional stuff": keys(), values(), and items()
-    ['', 'key', 'king']
+    4
+    >>> sorted(T) # plus "traditional stuff": keys(), values(), and items()
+    ['', 'four', 'key', 'king']
     >>> # scanning a text S with key(S), value(S), and item(S):
     >>> S = 'keys and kewl stuff'
     >>> T.key(S) # report the (longest) key that is a prefix of S
     'key'
-    >>> T.value(S[1:]) # remember: the empty root always matches!
-    1
-    >>> del T[''] # interlude: deleting keys
-    >>> T.item(S[9:]) # raise error if no key is a prefix of S
+    >>> T.value(S, 9) # using offsets; NB: empty root always matches!
+    >>> del T[''] # interlude: deleting keys and root is the empty key
+    >>> T.item(S, 9) # raise error if no key is a prefix of S
     Traceback (most recent call last):
         ...
     KeyError: 'k'
     >>> # info: the error string above contains the matched path so far
-    >>> T.item(S[1:], None) # avoid the error by specifying a default
+    >>> T.item(S, 9, default=None) # avoid the error by specifying a default
+    (None, None)
     >>> # iterate all matching content with keys(S), values(S), and items(S):
     >>> list(T.items(S))
     [('key', 'value')]
+    >>> T.isPrefix('k') # reverse lookup: check if S is a prefix of any key
+    True
+    >>> T.isPrefix('kong')
+    False
+    >>> sorted(T.iter('k')) # and get all keys that have S as prefix
+    ['key', 'king']
 
 *Deleting* entries is a "half-supported" operation only. The key appears
 "removed", but the trie is not actually changed, only the node state is
@@ -72,6 +78,46 @@ string iff a full match was made and ``None`` otherwise)::
     >>> T.key('is absent here', None, start=3) # start scanning at offset 3
     >>> T.key('is present here', None, start=3) # start scanning at offset 3
     'present'
+
+API
+---
+
+trie(``*value``, ``**branch``)
+    | Create a new tree node.
+    | Any arguments will be used as the ``value`` of this node.
+    | If keyword arguments are given, they initialize a whole ``branch``.
+    | Note that ``None`` is a valid value for a node.
+
+isPrefix(``prefix``)
+    | Return True if any key starts with ``prefix``.
+
+item(``string``, ``start=0``, ``end=None``, ``default=NULL``)
+    | Return the key, value pair of the longest key that is a prefix of ``string`` (beginning at ``start`` and ending at ``end``).
+    | If no key matches, raise a `KeyError` or return the `None`, ``default`` pair if any ``default`` value was set.
+
+items([``string`` [, ``start`` [, ``end`` ]]])
+    Return all key, value pairs (for keys that are a prefix of ``string``
+    (beginning at ``start`` (and terminating before ``end``))).
+
+iter(``prefix``)
+    Return an iterator over all keys that start with ``prefix``.
+
+key(``string``, ``start=0``, ``end=None``, ``default=NULL``)
+    | Return the longest key that is a prefix of ``string`` (beginning at ``start`` and ending at ``end``).
+    | If no key matches, raise a `KeyError` or return the ``default`` value if it was set.
+
+keys([``string`` [, ``start`` [, ``end`` ]]])
+    Return all keys (that are a prefix of ``string``
+    (beginning at ``start`` (and terminating before ``end``))).
+
+value(``string``, ``start=0``, ``end=None``, ``default=NULL``)
+    | Return the value of the longest key that is a prefix of ``string`` (beginning at ``start`` and ending at ``end``).
+    | If no key matches, raise a `KeyError` or return the ``default`` value if it was set.
+
+values([``string`` [, ``start`` [, ``end`` ]]])
+    Return all values (for keys that are a prefix of ``string``
+    (beginning at ``start`` (and terminating before ``end``))).
+
 
 History
 -------
@@ -111,7 +157,8 @@ History
 
 7. *Improvement*: Switched back to a very efficient internal dictionary
    implementation; Runs about two- to three times as fast as the two-tuple
-   list from update 4 against the simple ``time_patricia.py`` "benchmark".
+   list from update 4 against the simple (and newly added) ``time_patricia.py``
+   "benchmark".
 
 Copyright
 ---------
