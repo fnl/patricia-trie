@@ -21,8 +21,8 @@ Usage
 
 ::
 
-    >>> T = trie(None, key='value', king='kong') # a root value and two pairs
-    >>> T['four'] = 99 # setting new values as in a dict
+    >>> T = trie('root', key='value', king='kong') # a root value and two pairs
+    >>> T['four'] = None # setting new values as in a dict
     >>> '' in T # check if the value exits (note: the [empty] root is '')
     True
     >>> 'kong' in T # existence checks as in a dict
@@ -35,14 +35,15 @@ Usage
     KeyError: 'kong'
     >>> len(T) # count keys ("terminals") in the tree
     4
-    >>> sorted(T) # plus "traditional stuff": keys(), values(), and items()
+    >>> sorted(T) # plus "traditional stuff": .keys(), .values(), and .items()
     ['', 'four', 'key', 'king']
-    >>> # scanning a text S with key(S), value(S), and item(S):
+    >>> # scanning a string S with key(S), value(S), and item(S):
     >>> S = 'keys and kewl stuff'
     >>> T.key(S) # report the (longest) key that is a prefix of S
     'key'
-    >>> T.value(S, 9) # using offsets; NB: empty root always matches!
-    >>> del T[''] # interlude: deleting keys and root is the empty key
+    >>> T.value(S, 9) # using offsets; NB: a root value always matches!
+    'root'
+    >>> del T[''] # interlude: deleting keys (here, the root)
     >>> T.item(S, 9) # raise error if no key is a prefix of S
     Traceback (most recent call last):
         ...
@@ -88,33 +89,33 @@ trie(``*value``, ``**branch``)
     | If keyword arguments are given, they initialize a whole ``branch``.
     | Note that ``None`` is a valid value for a node.
 
-isPrefix(``prefix``)
+trie.isPrefix(``prefix``)
     | Return True if any key starts with ``prefix``.
 
-item(``string``, ``start=0``, ``end=None``, ``default=NULL``)
+trie.item(``string``, ``start=0``, ``end=None``, ``default=NULL``)
     | Return the key, value pair of the longest key that is a prefix of ``string`` (beginning at ``start`` and ending at ``end``).
     | If no key matches, raise a `KeyError` or return the `None`, ``default`` pair if any ``default`` value was set.
 
-items([``string`` [, ``start`` [, ``end`` ]]])
+trie.items([``string`` [, ``start`` [, ``end`` ]]])
     Return all key, value pairs (for keys that are a prefix of ``string``
     (beginning at ``start`` (and terminating before ``end``))).
 
-iter(``prefix``)
+trie.iter(``prefix``)
     Return an iterator over all keys that start with ``prefix``.
 
-key(``string``, ``start=0``, ``end=None``, ``default=NULL``)
+trie.key(``string``, ``start=0``, ``end=None``, ``default=NULL``)
     | Return the longest key that is a prefix of ``string`` (beginning at ``start`` and ending at ``end``).
     | If no key matches, raise a `KeyError` or return the ``default`` value if it was set.
 
-keys([``string`` [, ``start`` [, ``end`` ]]])
+trie.keys([``string`` [, ``start`` [, ``end`` ]]])
     Return all keys (that are a prefix of ``string``
     (beginning at ``start`` (and terminating before ``end``))).
 
-value(``string``, ``start=0``, ``end=None``, ``default=NULL``)
+trie.value(``string``, ``start=0``, ``end=None``, ``default=NULL``)
     | Return the value of the longest key that is a prefix of ``string`` (beginning at ``start`` and ending at ``end``).
     | If no key matches, raise a `KeyError` or return the ``default`` value if it was set.
 
-values([``string`` [, ``start`` [, ``end`` ]]])
+trie.values([``string`` [, ``start`` [, ``end`` ]]])
     Return all values (for keys that are a prefix of ``string``
     (beginning at ``start`` (and terminating before ``end``))).
 

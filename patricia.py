@@ -20,11 +20,9 @@ string iff a full match was made and ``None`` otherwise). In other words, it
 is not necessary to create slices of strings to scan in a window only::
 
     >>> T = trie(present=None)
+    >>> T.key('is absent here', 3, 9, None) # scan in second word [3:9]
     >>> T.key('is present here', 3, 10, None) # scan in second word [3:10]
     'present'
-    >>> T.key('is absent here', 3, 9, None) # scan in second word [3:9]
-    >>> T
-    trie({'present': None})
 
 License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
@@ -79,8 +77,8 @@ class trie():
     """
     Usage Example::
 
-      >>> T = trie(None, key='value', king='kong') # a root value and two pairs
-      >>> T['four'] = 99 # setting new values as in a dict
+      >>> T = trie('root', key='value', king='kong') # a root and two nodes
+      >>> T['four'] = None # setting new values as in a dict
       >>> '' in T # check if the value exits (note: the [empty] root is '')
       True
       >>> 'kong' in T # existence checks as in a dict
@@ -100,6 +98,7 @@ class trie():
       >>> T.key(S) # report the (longest) key that is a prefix of S
       'key'
       >>> T.value(S, 9) # using offsets; NB: empty root always matches!
+      'root'
       >>> del T[''] # interlude: deleting keys and root is the empty key
       >>> T.item(S, 9) # raise error if no key is a prefix of S
       Traceback (most recent call last):
@@ -165,11 +164,11 @@ class trie():
             if key[idx] in node._edges:
                 edge, child = node._edges[key[idx]]
                 if key.startswith(edge, idx):
-                    # the whole prefix matches; advance:
+                    # the whole prefix matches; advance
                     node = child
                     idx += len(edge)
                 else:
-                    # split edge after matching part of the key:
+                    # split edge after the matching part of the key
                     pos = 1
                     last = min(len(edge), keylen - idx)
                     while pos < last and edge[pos] == key[idx + pos]:
@@ -180,7 +179,7 @@ class trie():
                     node = split
                     idx += pos
             else:
-                # no common prefix, create a completely new node
+                # no common prefix, create a new edge and (leaf) node
                 node._edges[key[idx]] = (key[idx:], trie(value))
                 break
         else:

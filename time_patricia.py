@@ -42,10 +42,11 @@ def test():
         if s != 142:
             raise RuntimeError(str(s))
 
-    # 3. make a real dictionary of all keys in the trie:
+    # 3. make a real dictionary of all keys in the trie
     if 'nine' not in dict(t.items()):
         raise RuntimeError(str(dict(t.items())))
 
 if __name__ == '__main__':
     import timeit
+    # 4. do that whole thing 3x10 times over and report the results
     print(timeit.repeat("test()", "from __main__ import test", number=10))
