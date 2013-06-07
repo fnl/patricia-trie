@@ -102,6 +102,12 @@ History
    overall performance a bit (about 20% faster on simple tests).
 5. *Bugfix*: When splitting edges while adding a new key that is shorter than
    the current edge, a index error would have occurred.
+6. Added optional keyword parameter ``end`` to the methods key(), keys(),
+   item(), items(), value(), and values(), so it is not necessary to scan
+   within a window::
+
+       T.key('string', start=2, end=3, default=None)
+       T.keys('string', start=2, end=3)
 
 Copyright
 ---------

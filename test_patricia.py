@@ -137,11 +137,21 @@ class TrieTests(TestCase):
         txt = 'The fool baal baarhus in the bazar!'
         presence = [4, 14, 29]
         for i in range(len(txt)):
-            if T.value(txt, False, i):
+            if T.value(txt, i, default=False):
                 self.assertTrue(i in presence,
                                 '{} {} "{}"'.format(str(presence), i, txt[i:]))
                 presence.remove(i)
         self.assertEqual(0, len(presence), str(presence))
+
+    def testWindowMatching(self):
+        T = trie(foo=1, foobar=2)
+        self.assertListEqual(['foo'], list(T.keys("foobar", 0, 3)))
+        self.assertListEqual([1], list(T.values("a foobar!", 2, 7)))
+        self.assertListEqual([('foo', 1), ('foobar', 2)],
+                             list(T.items("a foobar!", 2, 8)))
+        self.assertEqual('foo', T.key("foobar", 0, 3))
+        self.assertEqual(1, T.value("a foobar!", 2, 7))
+        self.assertEqual(('foobar', 2), T.item("a foobar!", 2, 8))
 
 if __name__ == '__main__':
     main()

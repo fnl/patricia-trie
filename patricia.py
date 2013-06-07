@@ -17,13 +17,14 @@ effect, make a copy of the trie (using a copy constructor idiom)::
 
 If you are only interested in scanning for the *presence* of keys, but do not
 care about mapping a value to each key, using ``None`` as the value of your
-keys and scanning with ``key(S, None, start=i)`` at every offset ``i`` in the
+keys and scanning with ``key(S, i, j, None)`` at every offset ``i:j`` in the
 string ``S`` is perfectly fine (because the return value will be the key
-string iff a full match was made and ``None`` otherwise)::
+string iff a full match was made and ``None`` otherwise). In other words, it
+is not necessary to create slices of strings to scan in a window only::
 
 >>> T = trie(present=None)
->>> T.key('is absent here', None, start=3) # start scanning at offset 3
->>> T.key('is present here', None, start=3) # start scanning at offset 3
+>>> T.key('is absent here', 3, 9, None) # scan in second word [3:9]
+>>> T.key('is present here', 3, 10, None) # scan in second word [3:10]
 'present'
 
 .. moduleauthor:: Florian Leitner <florian.leitner@gmail.com>
@@ -31,9 +32,12 @@ string iff a full match was made and ``None`` otherwise)::
 """
 
 __author__ = 'Florian Leitner'
-__version__ = '5'
+__version__ = '6'
+
 
 class _NonTerminal(): pass
+
+
 __NON_TERMINAL__ = _NonTerminal()
 
 # recursive functions
@@ -45,10 +49,12 @@ def _count(node):
         count += _count(child)
     return count
 
+
 def _keys(node, accu):
     "Yield keys of terminal nodes in this branch."
     for key, value in _items(node, accu):
         yield key
+
 
 def _items(node, accu):
     "Yield key, value pairs of terminal nodes in this branch."
@@ -59,6 +65,7 @@ def _items(node, accu):
         for key, value in _items(child, accu):
             yield key, value
         accu.pop()
+
 
 def _values(node):
     "Yield values of terminal nodes in this branch."
@@ -93,14 +100,14 @@ class trie():
     >>> S = 'keys and kewl stuff'
     >>> T.key(S) # report the (longest) key that is a prefix of S
     'key'
-    >>> T.value(S, start=9) # using offsets; NB: empty root always matches!
+    >>> T.value(S, 9) # using offsets; NB: empty root always matches!
     >>> del T[''] # interlude: deleting keys and root is the empty key
-    >>> T.item(S, start=9) # raise error if no key is a prefix of S
+    >>> T.item(S, 9) # raise error if no key is a prefix of S
     Traceback (most recent call last):
         ...
     KeyError: 'k'
     >>> # info: the error string above contains the matched path so far
-    >>> T.item(S, None, 9) # avoid the error by specifying a default
+    >>> T.item(S, 9, default=None) # avoid the error by specifying a default
     (None, None)
     >>> # iterate all matching content with keys(S), values(S), and items(S):
     >>> list(T.items(S))
@@ -130,26 +137,26 @@ class trie():
         for key, val in keys.items():
             self[key] = val
 
-    def _find(self, path, offset):
+    def _find(self, path, start, end=None):
         for edge, child in self._edges:
-            if path.startswith(edge, offset):
-                return child, offset + len(edge)
+            if path.startswith(edge, start, end):
+                return child, start + len(edge)
         else:
-            return None, offset # return None
+            return None, start # return None
 
-    def _next(self, path, offset):
+    def _next(self, path, start, end=None):
         for edge, child in self._edges:
-            if path.startswith(edge, offset):
-                return child, offset + len(edge)
+            if path.startswith(edge, start, end):
+                return child, start + len(edge)
         else:
             raise KeyError(path) # raise error
 
-    def _scan(self, string, rval_fun, idx):
+    def _scan(self, string, rvalFun, start, end=None):
         node = self
         while node is not None:
             if node._value is not __NON_TERMINAL__:
-                yield rval_fun(string, idx, node._value)
-            node, idx = node._find(string, idx)
+                yield rvalFun(string, start, node._value)
+            node, start = node._find(string, start, end)
 
     def __setitem__(self, key, value):
         node = self
@@ -222,59 +229,69 @@ class trie():
         string = ['trie({']
         first = True
         for key, value in _items(self, []):
-            if first: first = False
-            else: string.append(', ')
+            if first:
+                first = False
+            else:
+                string.append(', ')
             string.append(repr(key))
             string.append(': ')
             string.append(repr(value))
         string.append('})')
         return ''.join(string)
 
-    def key(self, string, default=__NON_TERMINAL__, start=0):
+    def key(self, string, start=0, end=None, default=__NON_TERMINAL__):
         """
         Return the longest key that is a prefix of ``string`` (beginning at
-        ``start``).
+        ``start`` and ending at ``end``).
         If no key matches, raise a `KeyError` or return the ``default`` value
         if it was set.
         """
-        return self.item(string, default, start)[0]
+        return self.item(string, start, end, default)[0]
 
-    def keys(self, string=None, start=0):
+    def keys(self, *scan):
         """
-        Return all keys (that are a prefix of ``string`` (beginning at
-        ``start``)).
+        Return all keys (that are a prefix of `str` (beginning at
+        `int` (and ending before `int`) in `str`)).
         """
-        if string is None:
+        l = len(scan)
+        if l == 0:
             return _keys(self, [])
         else:
-            return self._scan(
-                string, (lambda string, idx, value: string[start:idx]), start
-            )
+            string = scan[0]
+            start = scan[1] if l != 1 else 0
+            end = scan[2] if l == 3 else None
+            getKey = lambda string, idx, value: string[start:idx]
+            return self._scan(string, getKey, start, end)
 
-    def value(self, string, default=__NON_TERMINAL__, start=0):
+    def value(self, string, start=0, end=None, default=__NON_TERMINAL__):
         """
         Return the value of the longest key that is a prefix of ``string``
-        (beginning at ``start``).
+        (beginning at ``start`` and ending at ``end``).
         If no key matches, raise a `KeyError` or return the ``default`` value
         if it was set.
         """
-        return self.item(string, default, start)[1]
+        return self.item(string, start, end, default)[1]
 
-    def values(self, string=None, start=0):
+    def values(self, *scan):
         """
-        Return all values (for keys that are a prefix of ``string`` (starting
-        at ``start``)).
+        Return all values (for keys that are a prefix of `str` (starting
+        at `int` (and ending before `int`) in `str`)).
         """
-        if string is None:
+        l = len(scan)
+        if l == 0:
             return _values(self)
         else:
-            return self._scan(string, (lambda string, i, value: value), start)
+            string = scan[0]
+            start = scan[1] if l != 1 else 0
+            end = scan[2] if l == 3 else None
+            getValue = lambda string, idx, value: value
+            return self._scan(string, getValue, start, end)
 
-    def item(self, string, default=__NON_TERMINAL__, start=0):
+    def item(self, string, start=0, end=None, default=__NON_TERMINAL__):
         """
         Return the key, value pair of the longest key that is a prefix of
-        ``string`` (beginning at ``start``).
-        If no key matches, raise a `KeyError` or return the ``None``,
+        ``string`` (beginning at ``start`` and ending at ``end``).
+        If no key matches, raise a `KeyError` or return the `None`,
         ``default`` pair if any ``default`` value was set.
         """
         node = self
@@ -282,7 +299,7 @@ class trie():
         idx = start
         last = self._value
         while idx < strlen:
-            node, idx = node._find(string, idx)
+            node, idx = node._find(string, idx, end)
             if node is None:
                 break
             elif node._value is not __NON_TERMINAL__:
@@ -294,30 +311,31 @@ class trie():
         else:
             raise KeyError(string[start:idx])
 
-    def items(self, string=None, start=0):
+    def items(self, *scan):
         """
-        Return all key, value pairs (for keys that are a prefix of ``string``
-        (beginning at ``start``)).
+        Return all key, value pairs (for keys that are a prefix of `str`
+        (beginning at `int` (and ending before `int`) in `str`)).
         """
-        if string is None:
+        l = len(scan)
+        if l == 0:
             return _items(self, [])
         else:
-            return self._scan(
-                string,
-                (lambda string, idx, value: (string[start:idx], value)),
-                start
-            )
+            string = scan[0]
+            start = scan[1] if l != 1 else 0
+            end = scan[2] if l == 3 else None
+            getItem = lambda string, idx, value: (string[start:idx], value)
+            return self._scan(string, getItem, start, end)
 
-    def isPrefix(self, string):
+    def isPrefix(self, prefix):
         "Return True if any key starts with ``string``."
         node = self
-        strlen = len(string)
+        plen = len(prefix)
         idx = 0
-        while idx < strlen:
-            len_left = strlen - idx
+        while idx < plen:
+            len_left = plen - idx
             for edge, child in node._edges:
-                prefix = edge[:len_left] if (len_left < len(edge)) else edge
-                if string.startswith(prefix, idx):
+                e = edge[:len_left] if (len_left < len(edge)) else edge
+                if prefix.startswith(e, idx):
                     node = child
                     idx += len(edge)
                     break
