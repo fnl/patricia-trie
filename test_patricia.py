@@ -11,6 +11,7 @@ from patricia import trie, _NonTerminal
 __author__ = 'Florian Leitner'
 __version__ = 1
 
+
 class TrieTests(TestCase):
     def testInitContains(self):
         T = trie(key='value')
@@ -157,7 +158,7 @@ class TrieTests(TestCase):
         T = trie(foo=1, bar=2)
         self.assertEqual('foo', T.key('foo', -3))
         self.assertEqual('foo', T.key('foo', -4))
-        self.assertEqual(None, T.key('foo', -4, 3, None))
+        self.assertEqual('foo', T.key('foo', -4, 3))
         self.assertEqual(None, T.key('foo', -3, -4, None))
         self.assertEqual(None, T.key('foo', -4, -4, None))
 
