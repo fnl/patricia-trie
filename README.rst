@@ -168,7 +168,10 @@ History
    Added a comparison to `marisa-trie`_ - by now, it seems, patricia-trie
    is roughly only a factor two slower than the marisa-trie PyPI version
    wrapping a C library. Also makes it nice to compare the two usages.
-
+9. *Bugfix* (15/09/2014): Correct behaviour when using an exactly matching
+   prefix as query (issue described in #1 by @zachrahan). Also fixes
+   code-smells (PEP8, code complexity) and a failing test case code.
+   
 Copyright
 ---------
 
