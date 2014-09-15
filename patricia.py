@@ -152,7 +152,7 @@ class trie():
             raise KeyError(match)
 
     def _find(self, path, start, *end):
-        if path[start] in self._edges:
+        if start < len(path) and path[start] in self._edges:
             edge, child = self._edges[path[start]]
             if path.startswith(edge, start, *end):
                 return child, start + len(edge)
