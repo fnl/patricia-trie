@@ -136,6 +136,21 @@ class trie():
         for key, val in branch.items():
             self[key] = val
 
+    @staticmethod
+    def __offsets(strlen, start, end):
+        # Return the correct start, end offsets for a string of length `strlen`.
+        return (max(0, strlen + start) if start < 0 else start,
+                strlen if end is None else end)
+
+    @staticmethod
+    def __check(value, match, default):
+        if value is not __NON_TERMINAL__:
+            return match, value
+        elif default is not __NON_TERMINAL__:
+            return None, default
+        else:
+            raise KeyError(match)
+
     def _find(self, path, start, *end):
         if path[start] in self._edges:
             edge, child = self._edges[path[start]]
@@ -154,8 +169,7 @@ class trie():
 
     def _scan(self, rvalFun, string, start=0, *end):
         node = self
-        if start < 0:
-            start = max(0, len(string) + start)
+        start, _ = trie.__offsets(len(string), start, None)
         while node is not None:
             if node._value is not __NON_TERMINAL__:
                 yield rvalFun(string, start, node._value)
@@ -304,21 +318,7 @@ class trie():
                 break
             elif node._value is not __NON_TERMINAL__:
                 last = node._value
-        return trie.__check(string[start:idx], last, default)
-
-    @staticmethod
-    def __offsets(strlen, start, end):
-        return (max(0, strlen + start) if start < 0 else start,
-                strlen if end is None else end)
-
-    @staticmethod
-    def __check(substring, last, default):
-        if last is not __NON_TERMINAL__:
-            return substring, last
-        elif default is not __NON_TERMINAL__:
-            return None, default
-        else:
-            raise KeyError(substring)
+        return trie.__check(last, string[start:idx], default)
 
     def items(self, *scan):
         """
