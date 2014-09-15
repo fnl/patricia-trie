@@ -88,11 +88,11 @@ class TrieTests(TestCase):
         self.assertEqual(('', 0), T.item(''))
         self.assertEqual('', T.key('foo'))
 
-    def testGetFromSingleEntryTrie(self):
-        T = trie(unique=5)
-        self.assertListEqual(['unique'], list(T.keys('unique')))
-        self.assertListEqual([5], list(T.values('unique')))
-        self.assertListEqual([('unique', 5)], list(T.items('unique')))
+    def testGetExactMatch(self):
+        T = trie(exact=5)
+        self.assertListEqual(['exact'], list(T.keys('exact')))
+        self.assertListEqual([5], list(T.values('exact')))
+        self.assertListEqual([('exact', 5)], list(T.items('exact')))
 
     def testFakeDefault(self):
         T = trie()
