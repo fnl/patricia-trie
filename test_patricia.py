@@ -9,7 +9,7 @@ from unittest import main, TestCase
 from patricia import trie, _NonTerminal
 
 __author__ = 'Florian Leitner'
-__version__ = 1
+__version__ = 9
 
 
 class TrieTests(TestCase):
