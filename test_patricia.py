@@ -50,6 +50,12 @@ class TrieTests(TestCase):
         T[''] = 0
         self.assertEqual(sorted(['', 'fool', 'ba', 'baz']), sorted(list(T)))
 
+    def testSingleEntry(self):
+        T = trie(foo=5)
+        self.assertListEqual(['foo'], list(T.keys()))
+        self.assertListEqual([5], list(T.values()))
+        self.assertListEqual([('foo', 5)], list(T.items()))
+
     def testValues(self):
         T = trie()
         T['ba'] = 2
