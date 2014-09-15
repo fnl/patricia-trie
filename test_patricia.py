@@ -163,7 +163,7 @@ class TrieTests(TestCase):
         T = trie(foo=1, bar=2)
         self.assertEqual('foo', T.key('foo', -3))
         self.assertEqual('foo', T.key('foo', -4))
-        self.assertEqual(None, T.key('foo', -4, 3, None))
+        self.assertEqual('foo', T.key('foo', -4, 3))
         self.assertEqual(None, T.key('foo', -3, -4, None))
         self.assertEqual(None, T.key('foo', -4, -4, None))
 
