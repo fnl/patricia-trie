@@ -171,6 +171,8 @@ History
 9. *Bugfix* (15/09/2014): Correct behaviour when using an exactly matching
    prefix as query (issue described in #1 by @zachrahan). Also fixes
    code-smells (PEP8, code complexity) and a failing test case code.
+10. *Bugfix* (14/12/2014): Added the missing README to PyPI package.
+    (MANIFEST.in)
    
 Copyright
 ---------

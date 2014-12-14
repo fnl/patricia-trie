@@ -28,7 +28,7 @@ License: Apache License v2 (http://www.apache.org/licenses/LICENSE-2.0.html)
 """
 
 __author__ = 'Florian Leitner <florian.leitner@gmail.com>'
-__version__ = '9'
+__version__ = '10'
 
 
 class _NonTerminal():

@@ -1,8 +1,11 @@
 from distutils.core import setup
 import patricia
 
-with open('README.rst') as file:
-    long_description = file.read()
+try:
+    with open('README.rst') as file:
+        long_description = file.read()
+except IOError:
+    long_description = None
 
 setup(
     name='patricia-trie',
